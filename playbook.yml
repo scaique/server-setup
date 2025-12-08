@@ -1,0 +1,19 @@
+---
+- name: Provisionamento completo do servidor Ubuntu
+  hosts: local
+  become: true
+
+  vars:
+    node_major: "22"
+    pnpm_package: "pnpm@latest"
+    security_email: "scaique.dev@gmail.com"
+
+  roles:
+    - base
+    - firewall
+    - apache
+    - node
+    - python
+    - pm2
+    - certbot
+    - security

@@ -1,0 +1,5 @@
+---
+- name: Instalar PM2 global
+  npm:
+    name: pm2
+    global: yes

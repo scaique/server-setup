@@ -1,0 +1,16 @@
+---
+- name: Atualizar o sistema
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Instalar pacotes essenciais
+  apt:
+    name:
+      - git
+      - curl
+      - unzip
+      - build-essential
+      - ca-certificates
+      - lsb-release
+    state: present

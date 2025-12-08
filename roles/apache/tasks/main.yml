@@ -1,0 +1,20 @@
+---
+- name: Instalar Apache
+  apt:
+    name: apache2
+    state: present
+
+- name: Habilitar módulos recomendados
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - headers
+    - rewrite
+    - ssl
+
+- name: Habilitar e iniciar serviço
+  systemd:
+    name: apache2
+    state: started
+    enabled: yes
