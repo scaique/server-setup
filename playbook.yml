@@ -9,11 +9,19 @@
     security_email: "scaique.dev@gmail.com"
 
   roles:
-    - base
-    - firewall
-    - apache
-    - node
-    - python
-    - pm2
-    - certbot
-    - security
+    - role: base
+    - tag: base
+    - role: firewall
+    - tag: firewall
+    - role: apache
+    - tag: apache
+    - role: node
+    - tag: node
+    - role: python
+    - tag: python
+    - role: pm2
+    - tag: pm2
+    - role: certbot
+    - tag: certbot
+    - role: security
+    - tag: security
