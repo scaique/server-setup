@@ -1,10 +1,9 @@
-handlers:
-  - name: reload apache
-    systemd:
-      name: apache2
-      state: reloaded
+- name: reload apache
+  systemd:
+    name: apache2
+    state: reloaded
 
-  - name: restart apache
-    systemd:
-      name: apache2
-      state: restarted
+- name: restart apache
+  systemd:
+    name: apache2
+    state: restarted

@@ -1,5 +1,4 @@
-handlers:
-  - name: reload apache
-    systemd:
-      name: apache2
-      state: reloaded
+- name: reload apache
+  systemd:
+    name: apache2
+    state: reloaded
