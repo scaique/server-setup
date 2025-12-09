@@ -1,0 +1,64 @@
+---
+- name: Criar diretórios dos sites com permissões totais
+  file:
+    path: "{{ item.root }}"
+    state: directory
+    mode: '0777'
+    recurse: yes
+  loop: "{{ sites }}"
+
+- name: Criar diretórios extras quando especificados
+  file:
+    path: "{{ extra_dir }}"
+    state: directory
+    mode: '0777'
+    recurse: yes
+  loop: "{{ sites }}"
+  when: item.extra_dirs is defined
+  loop_control:
+    loop_var: site_item
+  vars:
+    extra_dir: "{{ item }}"
+  with_items: "{{ site_item.extra_dirs | default([]) }}"
+
+- name: Criar arquivos de configuração para sites estáticos
+  template:
+    src: static-site.conf.j2
+    dest: "/etc/apache2/sites-available/{{ item.domain }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ sites }}"
+  when: item.type == 'static'
+  notify: reload apache
+
+- name: Criar arquivos de configuração para sites backend
+  template:
+    src: backend-site.conf.j2
+    dest: "/etc/apache2/sites-available/{{ item.domain }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ sites }}"
+  when: item.type == 'backend'
+  notify: reload apache
+
+- name: Habilitar sites
+  command: a2ensite {{ item.domain }}.conf
+  args:
+    creates: /etc/apache2/sites-enabled/{{ item.domain }}.conf
+  loop: "{{ sites }}"
+  notify: reload apache
+
+- name: Garantir que módulos necessários estão habilitados
+  apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - proxy
+    - proxy_http
+    - proxy_wstunnel
+    - rewrite
+    - headers
+    - ssl
+  notify: restart apache

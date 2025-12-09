@@ -1,0 +1,34 @@
+ssl_email: "scaique.dev@gmail.com"
+sites:
+  - domain: scaique.dev.br
+    type: backend
+    root: /var/www/html/scaique
+    port: 2000
+    
+  - domain: desejo.scaique.dev.br
+    type: backend
+    root: /var/www/html/desejo
+    port: 3000
+    
+  - domain: unfollowers.scaique.dev.br
+    type: backend
+    root: /var/www/html/unfollowers
+    port: 4000
+    
+  - domain: xequematestudio.com.br
+    type: backend
+    root: /var/www/html/xequematestudio
+    port: 5000
+    
+  - domain: app.scaique.dev.br
+    type: backend
+    root: /var/www/html/galeradasondas-backend
+    port: 8000
+    extra_dirs:
+      - /var/www/html/galeradasondas-backend/estoque/images
+      - /var/www/html/galeradasondas-backend/vendas/images
+    
+  - domain: comemoracao.scaique.dev.br
+    type: static
+    root: /var/www/html/aniversary-site/dist
+    spa: true

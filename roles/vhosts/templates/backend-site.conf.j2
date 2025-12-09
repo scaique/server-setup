@@ -1,0 +1,41 @@
+<VirtualHost *:80>
+    ServerName {{ item.domain }}
+    ServerAlias {{ item.domain }}
+    DocumentRoot {{ item.root }}
+    
+    # Configuração para servir arquivos estáticos (quando houver)
+    <Directory {{ item.root }}>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    
+{% if item.extra_dirs is defined %}
+{% for dir in item.extra_dirs %}
+    # Diretório para imagens (preparado para o futuro)
+    <Directory {{ dir }}>
+        Options Indexes FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+    
+{% endfor %}
+{% endif %}
+    # Redirecionamento para HTTPS será adicionado pelo Certbot
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:{{ item.port }}/
+    ProxyPassReverse / http://127.0.0.1:{{ item.port }}/
+    
+    # Headers para CORS (se necessário para APIs)
+    # Header always set Access-Control-Allow-Origin "*"
+    # Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, HEAD"
+    # Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    
+    # Logs
+    ErrorLog ${APACHE_LOG_DIR}/{{ item.domain | replace('.', '-') }}_error.log
+    CustomLog ${APACHE_LOG_DIR}/{{ item.domain | replace('.', '-') }}_access.log combined
+</VirtualHost>

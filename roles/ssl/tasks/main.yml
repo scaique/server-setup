@@ -1,0 +1,58 @@
+---
+- name: Instalar Certbot e plugin Apache
+  apt:
+    name:
+      - certbot
+      - python3-certbot-apache
+    state: present
+    update_cache: yes
+
+- name: Verificar se certificado já existe
+  stat:
+    path: "/etc/letsencrypt/live/{{ item.domain }}/fullchain.pem"
+  register: cert_exists
+  loop: "{{ sites }}"
+
+- name: Obter certificados SSL com Certbot (modo Apache)
+  command: >
+    certbot --apache
+    --non-interactive
+    --agree-tos
+    --email {{ ssl_email }}
+    --domains {{ item.item.domain }}
+    --redirect
+    --keep-until-expiring
+  loop: "{{ cert_exists.results }}"
+  when: not item.stat.exists
+  register: cert_result
+  ignore_errors: yes
+
+- name: Adicionar linha de redirecionamento do Certbot se não existir
+  blockinfile:
+    path: "/etc/apache2/sites-available/{{ item.domain }}.conf"
+    marker: ""
+    insertbefore: "</VirtualHost>"
+    block: |
+      RewriteCond %{SERVER_NAME} ={{ item.domain }}
+      RewriteRule ^ https://%{SERVER_NAME}%{REQUEST_URI} [END,NE,R=permanent]
+  loop: "{{ sites }}"
+  notify: reload apache
+
+- name: Configurar renovação automática via cron
+  cron:
+    name: "Renovação automática SSL Certbot"
+    job: "/usr/bin/certbot renew --quiet --no-self-upgrade --post-hook 'systemctl reload apache2'"
+    hour: "3"
+    minute: "30"
+    day: "*/2"
+    state: present
+
+- name: Teste de renovação
+  command: certbot renew --dry-run
+  register: renewal_test
+  changed_when: false
+  failed_when: false
+
+- name: Mostrar resultado do teste de renovação
+  debug:
+    msg: "Teste de renovação: {{ 'OK' if renewal_test.rc == 0 else 'FALHOU - Verifique manualmente' }}"

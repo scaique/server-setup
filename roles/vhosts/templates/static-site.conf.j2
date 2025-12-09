@@ -1,0 +1,25 @@
+<VirtualHost *:80>
+    ServerName {{ item.domain }}
+    ServerAlias {{ item.domain }}
+    
+    DocumentRoot {{ item.root }}
+    
+    <Directory {{ item.root }}>
+        Options {% if item.spa is defined and item.spa %}-Indexes{% else %}Indexes{% endif %} +FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+{% if item.spa is defined and item.spa %}
+        # Regras para SPA React
+        RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+{% endif %}
+    </Directory>
+    
+    ErrorLog ${APACHE_LOG_DIR}/{{ item.domain | replace('.', '-') }}-error.log
+    CustomLog ${APACHE_LOG_DIR}/{{ item.domain | replace('.', '-') }}-access.log combined
+</VirtualHost>
