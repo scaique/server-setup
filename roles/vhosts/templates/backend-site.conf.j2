@@ -3,7 +3,7 @@
     ServerAlias {{ item.domain }}
     DocumentRoot {{ item.root }}
     
-    # Configuração para servir arquivos estáticos (quando houver)
+    # Configuração para servir arquivos estáticos
     <Directory {{ item.root }}>
         Options Indexes FollowSymLinks
         AllowOverride All
@@ -12,7 +12,7 @@
     
 {% if item.extra_dirs is defined %}
 {% for dir in item.extra_dirs %}
-    # Diretório para imagens (preparado para o futuro)
+    # Diretório para imagens
     <Directory {{ dir }}>
         Options Indexes FollowSymLinks
         AllowOverride None
@@ -29,11 +29,6 @@
     ProxyPreserveHost On
     ProxyPass / http://127.0.0.1:{{ item.port }}/
     ProxyPassReverse / http://127.0.0.1:{{ item.port }}/
-    
-    # Headers para CORS (se necessário para APIs)
-    # Header always set Access-Control-Allow-Origin "*"
-    # Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, HEAD"
-    # Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
     
     # Logs
     ErrorLog ${APACHE_LOG_DIR}/{{ item.domain | replace('.', '-') }}_error.log

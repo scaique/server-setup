@@ -1,4 +1,10 @@
 ---
+- name: Verificar configuração do Apache
+  command: apache2ctl configtest
+  register: config_test
+  changed_when: false
+  failed_when: "'Syntax OK' not in config_test.stdout"
+
 - name: Garantir que módulos necessários estão habilitados
   apache2_module:
     name: "{{ item }}"
@@ -8,6 +14,8 @@
     - proxy
     - proxy_http
     - proxy_wstunnel
+    - proxy_balancer
+    - lbmethod_byrequests
     - rewrite
     - headers
     - ssl
