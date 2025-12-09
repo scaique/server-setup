@@ -30,7 +30,7 @@
 - name: Adicionar linha de redirecionamento do Certbot se não existir
   blockinfile:
     path: "/etc/apache2/sites-available/{{ item.domain }}.conf"
-    marker: ""
+    marker: "# ANSIBLE MANAGED BLOCK - CERTBOT REDIRECT"
     insertbefore: "</VirtualHost>"
     block: |
       RewriteCond %{SERVER_NAME} ={{ item.domain }}

@@ -9,17 +9,11 @@
 
 - name: Criar diretórios extras quando especificados
   file:
-    path: "{{ extra_dir }}"
+    path: "{{ item.1 }}"
     state: directory
     mode: '0777'
     recurse: yes
-  loop: "{{ sites }}"
-  when: item.extra_dirs is defined
-  loop_control:
-    loop_var: site_item
-  vars:
-    extra_dir: "{{ item }}"
-  with_items: "{{ site_item.extra_dirs | default([]) }}"
+  loop: "{{ sites | subelements('extra_dirs', skip_missing=True) }}"
 
 - name: Criar arquivos de configuração para sites estáticos
   template:
