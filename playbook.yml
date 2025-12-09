@@ -10,18 +10,25 @@
 
   roles:
     - role: base
-    - tags: base
+      tags: base
+
     - role: firewall
-    - tags: firewall
+      tags: firewall
+
     - role: apache
-    - tags: apache
+      tags: apache
+
     - role: node
-    - tags: node
+      tags: node
+
     - role: python
-    - tags: python
+      tags: python
+
     - role: pm2
-    - tags: pm2
+      tags: pm2
+
     - role: certbot
-    - tags: certbot
+      tags: certbot
+
     - role: security
-    - tags: security
+      tags: security
