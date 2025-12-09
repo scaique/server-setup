@@ -1,4 +1,17 @@
 ---
+- name: Garantir que módulos necessários estão habilitados
+  ansible.builtin.apache2_module:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - proxy
+    - proxy_http
+    - proxy_wstunnel
+    - rewrite
+    - headers
+    - ssl
+  notify: restart apache
+
 - name: Criar diretórios dos sites com permissões totais
   file:
     path: "{{ item.root }}"
@@ -43,16 +56,3 @@
     creates: /etc/apache2/sites-enabled/{{ item.domain }}.conf
   loop: "{{ sites }}"
   notify: reload apache
-
-- name: Garantir que módulos necessários estão habilitados
-  apache2_module:
-    name: "{{ item }}"
-    state: present
-  loop:
-    - proxy
-    - proxy_http
-    - proxy_wstunnel
-    - rewrite
-    - headers
-    - ssl
-  notify: restart apache
