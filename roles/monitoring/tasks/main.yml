@@ -1,0 +1,189 @@
+---
+# ==============================================================================
+# SCRIPTS DE MONITORAMENTO E VERIFICAÇÃO DE SEGURANÇA
+# ==============================================================================
+# Esta role cria scripts úteis para monitoramento do servidor
+# ==============================================================================
+
+- name: Criar diretório para scripts
+  file:
+    path: /usr/local/bin
+    state: directory
+    mode: '0755'
+
+# ==============================================================================
+# SCRIPT: checkmalware
+# ==============================================================================
+# Verifica processos suspeitos e atividades maliciosas
+# ==============================================================================
+
+- name: Criar script checkmalware
+  copy:
+    dest: /usr/local/bin/checkmalware
+    content: |
+      #!/bin/bash
+      # ==================================================================
+      # SCRIPT DE VERIFICAÇÃO DE MALWARE E PROCESSOS SUSPEITOS
+      # ==================================================================
+      
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "🔍 VERIFICAÇÃO DE SEGURANÇA - $(date)"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+      # Processos suspeitos comuns de mineração
+      SUSPICIOUS_PROCS="xmrig runnv alive lived miner cryptonight kdevtmpfsi systemd-service"
+      
+      echo ""
+      echo "📋 Verificando processos suspeitos..."
+      FOUND=0
+      for proc in $SUSPICIOUS_PROCS; do
+          if pgrep -f "$proc" > /dev/null 2>&1; then
+              echo "⚠️  ALERTA: Processo suspeito encontrado: $proc"
+              ps aux | grep -i "$proc" | grep -v grep
+              FOUND=1
+          fi
+      done
+      
+      if [ $FOUND -eq 0 ]; then
+          echo "✅ Nenhum processo suspeito encontrado"
+      fi
+      
+      # Verificar conexões de rede suspeitas
+      echo ""
+      echo "🌐 Verificando conexões de rede..."
+      
+      # Portas suspeitas (mineração usa portas altas)
+      SUSPICIOUS_CONNS=$(ss -tupn | grep -E ':[3-9][0-9]{3}' | grep -v '127.0.0.1' | grep ESTAB)
+      
+      if [ -z "$SUSPICIOUS_CONNS" ]; then
+          echo "✅ Nenhuma conexão suspeita"
+      else
+          echo "⚠️  Conexões em portas altas detectadas:"
+          echo "$SUSPICIOUS_CONNS"
+      fi
+      
+      # Verificar arquivos em /tmp
+      echo ""
+      echo "📁 Verificando /tmp..."
+      SUSPICIOUS_FILES=$(find /tmp -type f -name "*.sh" -o -name "runnv" -o -name "config.json" 2>/dev/null)
+      
+      if [ -z "$SUSPICIOUS_FILES" ]; then
+          echo "✅ Nenhum arquivo suspeito em /tmp"
+      else
+          echo "⚠️  Arquivos suspeitos encontrados em /tmp:"
+          echo "$SUSPICIOUS_FILES"
+      fi
+      
+      # Verificar carga do sistema
+      echo ""
+      echo "💻 Carga do sistema:"
+      uptime
+      
+      # Top 10 processos por CPU
+      echo ""
+      echo "📊 Top 10 processos por uso de CPU:"
+      ps aux --sort=-%cpu | head -11
+      
+      echo ""
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    mode: '0755'
+    owner: root
+    group: root
+
+# ==============================================================================
+# SCRIPT: server-status
+# ==============================================================================
+# Mostra status geral do servidor
+# ==============================================================================
+
+- name: Criar script server-status
+  copy:
+    dest: /usr/local/bin/server-status
+    content: |
+      #!/bin/bash
+      # ==================================================================
+      # SCRIPT DE STATUS DO SERVIDOR
+      # ==================================================================
+      
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "📊 STATUS DO SERVIDOR - $(date)"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+      echo ""
+      echo "🖥️  Sistema:"
+      uname -a
+      
+      echo ""
+      echo "⏱️  Uptime:"
+      uptime
+      
+      echo ""
+      echo "💾 Memória:"
+      free -h
+      
+      echo ""
+      echo "💿 Disco:"
+      df -h /
+      
+      echo ""
+      echo "🌐 Apache Status:"
+      systemctl status apache2 --no-pager | head -5
+      
+      echo ""
+      echo "📱 PM2 Apps:"
+      pm2 list
+      
+      echo ""
+      echo "🔥 Firewall (UFW):"
+      ufw status | head -10
+      
+      echo ""
+      echo "🔒 Fail2ban:"
+      fail2ban-client status
+      
+      echo ""
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    mode: '0755'
+    owner: root
+    group: root
+
+# ==============================================================================
+# SCRIPT: check-certs
+# ==============================================================================
+# Verifica certificados SSL
+# ==============================================================================
+
+- name: Criar script check-certs
+  copy:
+    dest: /usr/local/bin/check-certs
+    content: |
+      #!/bin/bash
+      # ==================================================================
+      # SCRIPT DE VERIFICAÇÃO DE CERTIFICADOS SSL
+      # ==================================================================
+      
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "🔐 VERIFICAÇÃO DE CERTIFICADOS SSL - $(date)"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+      certbot certificates
+      
+      echo ""
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    mode: '0755'
+    owner: root
+    group: root
+
+# ==============================================================================
+# INFORMAÇÃO AO USUÁRIO
+# ==============================================================================
+
+- name: Mostrar scripts disponíveis
+  debug:
+    msg:
+      - "✅ Scripts de monitoramento instalados:"
+      - "   - checkmalware: Verifica processos suspeitos e malware"
+      - "   - server-status: Mostra status geral do servidor"
+      - "   - check-certs: Verifica certificados SSL"
+      - ""
+      - "💡 Use: checkmalware, server-status, ou check-certs"

@@ -1,66 +1,54 @@
 ---
 # ==============================================================================
-# CONFIGURAÇÕES GERAIS
+# EXEMPLO DE CONFIGURAÇÃO
 # ==============================================================================
-user_email: "scaique.dev@gmail.com"
+# Copie este arquivo para vars/vars.yml e ajuste conforme necessário
+# ==============================================================================
+
+# Email para certificados SSL e notificações
+user_email: "seu@email.com"
+
+# Versão do Node.js (major)
 node_major: "22"
+
+# Gerenciador de pacotes Node
 pnpm_package: "pnpm@latest"
 
 # ==============================================================================
-# SITES E APLICAÇÕES
-# ==============================================================================
-# Tipos disponíveis:
-#   - backend: Aplicação Node.js/NestJS com proxy reverso
-#   - static: Site estático HTML/React build
-#
-# Parâmetros:
-#   - domain: Domínio completo
-#   - type: backend | static
-#   - root: Caminho completo do diretório
-#   - port: (apenas backend) Porta da aplicação
-#   - spa: (apenas static) true para Single Page Application
-#   - extra_dirs: (opcional) Diretórios adicionais com permissões
+# SEUS SITES
 # ==============================================================================
 
 sites:
-  # Portfolio principal
-  - domain: scaique.dev.br
+  # Exemplo: Next.js application
+  - domain: app.seusite.com.br
     type: backend
-    root: /var/www/scaique-portfolio
-    port: 2000
-    
-  # Unfollowers Instagram
-  - domain: unfollowers.scaique.dev.br
+    root: /var/www/app
+    port: 3000
+
+  # Exemplo: NestJS API
+  - domain: api.seusite.com.br
     type: backend
-    root: /var/www/unfollowers
-    port: 4000
-    
-  # Site Xeque Mate Studio
-  - domain: xequematestudio.com.br
-    type: backend
-    root: /var/www/xequematestudio
-    port: 5000
-    
-  # Backend Galera das Ondas
-  - domain: app.scaique.dev.br
-    type: backend
-    root: /var/www/galeradasondas-backend
+    root: /var/www/api
     port: 8000
     extra_dirs:
-      - /var/www/galeradasondas-backend/estoque/images
-      - /var/www/galeradasondas-backend/vendas/images
+      - /var/www/api/uploads
+
+  # Exemplo: Site estático (React build)
+  - domain: www.seusite.com.br
+    type: static
+    root: /var/www/website/dist
+    spa: true
 
 # ==============================================================================
-# CONFIGURAÇÕES DE SEGURANÇA
+# SEGURANÇA
 # ==============================================================================
-# Configurações do Fail2ban
+
 fail2ban_config:
-  bantime: 3600        # 1 hora
-  findtime: 600        # 10 minutos
-  maxretry: 3          # 3 tentativas
-  destemail: "scaique.dev@gmail.com"
+  bantime: 3600
+  findtime: 600
+  maxretry: 3
+  destemail: "seu@email.com"
 
-# Configurações do UFW
 ufw_rules:
   - port: 22
     proto: tcp
@@ -73,9 +61,9 @@ ufw_rules:
     rule: allow
 
 # ==============================================================================
-# CONFIGURAÇÕES DO APACHE
+# APACHE
 # ==============================================================================
-# Módulos necessários do Apache
+
 apache_modules:
   - proxy
   - proxy_http
@@ -91,9 +79,9 @@ apache_modules:
   - deflate
 
 # ==============================================================================
-# CONFIGURAÇÕES DE CLOUDFLARE
+# CLOUDFLARE - IPs atualizados em Dezembro 2025
 # ==============================================================================
-# IPs do Cloudflare para RestoreIP (atualizado em 2025)
+
 cloudflare_ipv4:
   - 173.245.48.0/20
   - 103.21.244.0/22

@@ -1,4 +1,17 @@
 ---
+# ==============================================================================
+# PROVISIONAMENTO COMPLETO DO SERVIDOR UBUNTU
+# ==============================================================================
+# Este playbook configura um servidor Ubuntu do zero com todas as dependências
+# necessárias para rodar aplicações web com Node.js, Apache e SSL.
+#
+# Uso:
+#   ansible-playbook so-setup.yml
+#
+# Ou via ansible-pull:
+#   ansible-pull -U https://github.com/SEU_USUARIO/server-setup.git so-setup.yml
+# ==============================================================================
+
 - name: Provisionamento completo do servidor Ubuntu
   hosts: local
   become: true
@@ -6,24 +19,95 @@
   vars_files:
     - vars/vars.yml
 
+  pre_tasks:
+    - name: Atualizar cache do APT
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
   roles:
+    # ========================================================================
+    # CONFIGURAÇÃO BÁSICA DO SISTEMA
+    # ========================================================================
     - role: base
-      tags: base
+      tags: [base, setup]
 
+    # ========================================================================
+    # SEGURANÇA E FIREWALL
+    # ========================================================================
     - role: firewall
-      tags: firewall
-
-    - role: apache
-      tags: apache
-
-    - role: node
-      tags: node
-
-    - role: pm2
-      tags: pm2
-
-    - role: certbot
-      tags: certbot
+      tags: [firewall, security, setup]
 
     - role: security
-      tags: security
+      tags: [security, setup]
+
+    # ========================================================================
+    # SERVIDOR WEB
+    # ========================================================================
+    - role: apache
+      tags: [apache, web, setup]
+
+    - role: certbot
+      tags: [certbot, ssl, setup]
+
+    # ========================================================================
+    # RUNTIME E GERENCIAMENTO DE PROCESSOS
+    # ========================================================================
+    - role: node
+      tags: [node, runtime, setup]
+
+    - role: pm2
+      tags: [pm2, runtime, setup]
+
+    # ========================================================================
+    # MONITORAMENTO (OPCIONAL)
+    # ========================================================================
+    - role: monitoring
+      tags: [monitoring, optional]
+
+  post_tasks:
+    - name: Reiniciar serviços essenciais
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+      loop:
+        - apache2
+        - fail2ban
+      tags: [setup]
+
+    - name: Mostrar status final
+      debug:
+        msg:
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          - "✅ PROVISIONAMENTO CONCLUÍDO COM SUCESSO!"
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          - ""
+          - "📦 Instalado:"
+          - "   - Ubuntu 24.04 LTS configurado"
+          - "   - Apache {{ apache_version | default('2.4') }} com SSL"
+          - "   - Node.js {{ node_major }}"
+          - "   - PM2 para gerenciamento de processos"
+          - "   - Certbot para SSL automático"
+          - "   - UFW Firewall configurado"
+          - "   - Fail2ban ativo"
+          - "   - Scripts de monitoramento"
+          - ""
+          - "🔐 Segurança:"
+          - "   - Firewall ativo (SSH, HTTP, HTTPS)"
+          - "   - Fail2ban protegendo SSH e Apache"
+          - "   - Anti-malware instalado (rkhunter, chkrootkit, clamav)"
+          - "   - Atualizações automáticas habilitadas"
+          - "   - Hardening do sistema aplicado"
+          - ""
+          - "📝 Próximos passos:"
+          - "   1. Execute: ansible-playbook sites-setup.yml"
+          - "   2. Configure seus domínios no Cloudflare"
+          - "   3. Deploy suas aplicações"
+          - ""
+          - "💡 Scripts disponíveis:"
+          - "   - checkmalware: Verificar processos suspeitos"
+          - "   - server-status: Ver status do servidor"
+          - "   - check-certs: Verificar certificados SSL"
+          - ""
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      tags: [setup]

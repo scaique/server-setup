@@ -1,0 +1,31 @@
+# ==============================================================================
+# CLOUDFLARE REMOTEIP CONFIGURATION
+# ==============================================================================
+# Esta configuração faz o Apache usar o IP real do visitante ao invés do IP
+# do Cloudflare. O Cloudflare envia o IP real no header CF-Connecting-IP.
+#
+# Atualizado em: Dezembro 2025
+# Fonte: https://www.cloudflare.com/ips/
+# ==============================================================================
+
+<IfModule remoteip_module>
+    # Header que contém o IP real do visitante
+    RemoteIPHeader CF-Connecting-IP
+    
+    # IPs confiáveis do Cloudflare (IPv4)
+{% for ip in cloudflare_ipv4 %}
+    RemoteIPTrustedProxy {{ ip }}
+{% endfor %}
+    
+    # IPs confiáveis do Cloudflare (IPv6)
+{% for ip in cloudflare_ipv6 %}
+    RemoteIPTrustedProxy {{ ip }}
+{% endfor %}
+</IfModule>
+
+# ==============================================================================
+# LOGS COM IP REAL
+# ==============================================================================
+# Os logs do Apache agora mostrarão o IP real do visitante ao invés do IP do
+# Cloudflare. Use %a no LogFormat para capturar o IP real.
+# ==============================================================================

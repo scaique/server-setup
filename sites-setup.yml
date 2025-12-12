@@ -1,4 +1,20 @@
 ---
+# ==============================================================================
+# CONFIGURAÇÃO DE SITES E SSL
+# ==============================================================================
+# Este playbook configura todos os virtual hosts do Apache e obtém certificados
+# SSL automaticamente para cada domínio.
+#
+# Uso:
+#   ansible-playbook sites-setup.yml
+#
+# Ou via ansible-pull:
+#   ansible-pull -U https://github.com/SEU_USUARIO/server-setup.git sites-setup.yml
+#
+# Para configurar apenas um site específico:
+#   ansible-playbook sites-setup.yml --extra-vars "single_site=scaique.dev.br"
+# ==============================================================================
+
 - name: Configuração de Sites e SSL
   hosts: local
   become: true
@@ -6,9 +22,111 @@
   vars_files:
     - vars/vars.yml
 
-  roles:
-    - role: vhosts
-      tags: vhosts
+  pre_tasks:
+    - name: Verificar se Apache está instalado
+      command: apache2 -v
+      register: apache_check
+      failed_when: false
+      changed_when: false
 
+    - name: Falhar se Apache não estiver instalado
+      fail:
+        msg: "Apache não está instalado. Execute primeiro: ansible-playbook so-setup.yml"
+      when: apache_check.rc != 0
+
+    - name: Filtrar sites se single_site foi especificado
+      set_fact:
+        filtered_sites: "{{ sites | selectattr('domain', 'equalto', single_site) | list }}"
+      when: single_site is defined
+
+    - name: Usar todos os sites se single_site não foi especificado
+      set_fact:
+        filtered_sites: "{{ sites }}"
+      when: single_site is not defined
+
+    - name: Mostrar sites que serão configurados
+      debug:
+        msg:
+          - "Sites que serão configurados:"
+          - "{{ filtered_sites | map(attribute='domain') | list }}"
+
+  roles:
+    # ========================================================================
+    # CONFIGURAÇÃO DE VIRTUAL HOSTS
+    # ========================================================================
+    - role: vhosts
+      vars:
+        sites: "{{ filtered_sites }}"
+      tags: [vhosts, sites]
+
+    # ========================================================================
+    # CERTIFICADOS SSL
+    # ========================================================================
     - role: ssl
-      tags: ssl
+      vars:
+        sites: "{{ filtered_sites }}"
+      tags: [ssl, sites]
+
+  post_tasks:
+    - name: Verificar configuração do Apache
+      command: apache2ctl configtest
+      register: configtest
+      changed_when: false
+      failed_when: configtest.rc != 0
+
+    - name: Recarregar Apache
+      systemd:
+        name: apache2
+        state: reloaded
+      tags: [sites]
+
+    - name: Testar conectividade dos sites
+      uri:
+        url: "https://{{ item.domain }}"
+        validate_certs: no
+        timeout: 10
+      loop: "{{ filtered_sites }}"
+      register: site_tests
+      failed_when: false
+      changed_when: false
+      tags: [test]
+
+    - name: Mostrar resultado dos testes
+      debug:
+        msg:
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          - "✅ CONFIGURAÇÃO DE SITES CONCLUÍDA!"
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          - ""
+          - "📋 Sites configurados:"
+          - "{% for site in filtered_sites %}"
+          - "   ✓ {{ site.domain }} ({{ site.type }})"
+          - "{% endfor %}"
+          - ""
+          - "🔐 SSL:"
+          - "   - Certificados obtidos e instalados"
+          - "   - Renovação automática configurada (cron)"
+          - "   - HTTPS redirect habilitado"
+          - ""
+          - "🌐 Cloudflare:"
+          - "   - RemoteIP configurado"
+          - "   - Logs mostram IP real dos visitantes"
+          - ""
+          - "📊 Teste de conectividade:"
+          - "{% for result in site_tests.results %}"
+          - "   {% if result.status is defined and result.status == 200 %}"
+          - "   ✅ {{ result.item.domain }}: OK (HTTP {{ result.status }})"
+          - "   {% elif result.status is defined %}"
+          - "   ⚠️  {{ result.item.domain }}: HTTP {{ result.status }}"
+          - "   {% else %}"
+          - "   ❌ {{ result.item.domain }}: Erro de conexão"
+          - "   {% endif %}"
+          - "{% endfor %}"
+          - ""
+          - "💡 Comandos úteis:"
+          - "   - check-certs: Ver certificados SSL"
+          - "   - server-status: Ver status geral"
+          - "   - apache2ctl configtest: Testar config"
+          - ""
+          - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      tags: [sites]
