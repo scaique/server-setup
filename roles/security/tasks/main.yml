@@ -39,13 +39,7 @@
     name:
       - rkhunter
       - chkrootkit
-      - clamav
-      - clamav-daemon
     state: present
-
-- name: Atualizar banco ClamAV
-  shell: freshclam
-  ignore_errors: yes
 
 - name: Atualizar rkhunter
   shell: rkhunter --update
