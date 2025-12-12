@@ -1,14 +1,10 @@
 ---
-# ==============================================================================
 # CONFIGURAÇÕES GERAIS
-# ==============================================================================
 user_email: "scaique.dev@gmail.com"
 node_major: "22"
 pnpm_package: "pnpm@latest"
 
-# ==============================================================================
 # SITES E APLICAÇÕES
-# ==============================================================================
 # Tipos disponíveis:
 #   - backend: Aplicação Node.js/NestJS com proxy reverso
 #   - static: Site estático HTML/React build
@@ -20,7 +16,6 @@ pnpm_package: "pnpm@latest"
 #   - port: (apenas backend) Porta da aplicação
 #   - spa: (apenas static) true para Single Page Application
 #   - extra_dirs: (opcional) Diretórios adicionais com permissões
-# ==============================================================================
 
 sites:
   # Portfolio principal
@@ -50,9 +45,7 @@ sites:
       - /var/www/galeradasondas-backend/estoque/images
       - /var/www/galeradasondas-backend/vendas/images
 
-# ==============================================================================
 # CONFIGURAÇÕES DE SEGURANÇA
-# ==============================================================================
 # Configurações do Fail2ban
 fail2ban_config:
   bantime: 3600        # 1 hora
@@ -72,9 +65,7 @@ ufw_rules:
     proto: tcp
     rule: allow
 
-# ==============================================================================
 # CONFIGURAÇÕES DO APACHE
-# ==============================================================================
 # Módulos necessários do Apache
 apache_modules:
   - proxy
@@ -90,9 +81,7 @@ apache_modules:
   - cache_disk
   - deflate
 
-# ==============================================================================
 # CONFIGURAÇÕES DE CLOUDFLARE
-# ==============================================================================
 # IPs do Cloudflare para RestoreIP (atualizado em 2025)
 cloudflare_ipv4:
   - 173.245.48.0/20

@@ -1,16 +1,4 @@
 ---
-# ==============================================================================
-# PROVISIONAMENTO COMPLETO DO SERVIDOR UBUNTU
-# ==============================================================================
-# Este playbook configura um servidor Ubuntu do zero com todas as dependências
-# necessárias para rodar aplicações web com Node.js, Apache e SSL.
-#
-# Uso:
-#   ansible-playbook so-setup.yml
-#
-# Ou via ansible-pull:
-#   ansible-pull -U https://github.com/SEU_USUARIO/server-setup.git so-setup.yml
-# ==============================================================================
 
 - name: Provisionamento completo do servidor Ubuntu
   hosts: local
@@ -26,42 +14,32 @@
         cache_valid_time: 3600
 
   roles:
-    # ========================================================================
     # CONFIGURAÇÃO BÁSICA DO SISTEMA
-    # ========================================================================
     - role: base
       tags: [base, setup]
 
-    # ========================================================================
     # SEGURANÇA E FIREWALL
-    # ========================================================================
     - role: firewall
       tags: [firewall, security, setup]
 
     - role: security
       tags: [security, setup]
 
-    # ========================================================================
     # SERVIDOR WEB
-    # ========================================================================
     - role: apache
       tags: [apache, web, setup]
 
     - role: certbot
       tags: [certbot, ssl, setup]
 
-    # ========================================================================
     # RUNTIME E GERENCIAMENTO DE PROCESSOS
-    # ========================================================================
     - role: node
       tags: [node, runtime, setup]
 
     - role: pm2
       tags: [pm2, runtime, setup]
 
-    # ========================================================================
     # MONITORAMENTO (OPCIONAL)
-    # ========================================================================
     - role: monitoring
       tags: [monitoring, optional]
 

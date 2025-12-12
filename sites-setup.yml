@@ -1,19 +1,4 @@
 ---
-# ==============================================================================
-# CONFIGURAÇÃO DE SITES E SSL
-# ==============================================================================
-# Este playbook configura todos os virtual hosts do Apache e obtém certificados
-# SSL automaticamente para cada domínio.
-#
-# Uso:
-#   ansible-playbook sites-setup.yml
-#
-# Ou via ansible-pull:
-#   ansible-pull -U https://github.com/SEU_USUARIO/server-setup.git sites-setup.yml
-#
-# Para configurar apenas um site específico:
-#   ansible-playbook sites-setup.yml --extra-vars "single_site=scaique.dev.br"
-# ==============================================================================
 
 - name: Configuração de Sites e SSL
   hosts: local
@@ -51,17 +36,13 @@
           - "{{ filtered_sites | map(attribute='domain') | list }}"
 
   roles:
-    # ========================================================================
     # CONFIGURAÇÃO DE VIRTUAL HOSTS
-    # ========================================================================
     - role: vhosts
       vars:
         sites: "{{ filtered_sites }}"
       tags: [vhosts, sites]
 
-    # ========================================================================
     # CERTIFICADOS SSL
-    # ========================================================================
     - role: ssl
       vars:
         sites: "{{ filtered_sites }}"
