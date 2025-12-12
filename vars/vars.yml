@@ -1,4 +1,6 @@
-ssl_email: "scaique.dev@gmail.com"
+user_email: "scaique.dev@gmail.com"
+node_major: "22"
+pnpm_package: "pnpm@latest"
 sites:
   - domain: scaique.dev.br
     type: backend

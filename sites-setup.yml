@@ -2,9 +2,13 @@
 - name: Configuração de Sites e SSL
   hosts: local
   become: true
+
   vars_files:
     - vars/vars.yml
 
   roles:
     - role: vhosts
+      tags: vhosts
+
     - role: ssl
+      tags: ssl

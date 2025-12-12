@@ -13,8 +13,8 @@
       bantime = 3600
       findtime = 600
       maxretry = 3
-      destemail = {{ security_email }}
-      sender = {{ security_email }}
+      destemail = {{ user_email }}
+      sender = {{ user_email }}
       mta = sendmail
 
       [sshd]

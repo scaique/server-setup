@@ -18,7 +18,7 @@
     certbot --apache
     --non-interactive
     --agree-tos
-    --email {{ ssl_email }}
+    --email {{ user_email }}
     --domains {{ item.item.domain }}
     --redirect
     --keep-until-expiring
