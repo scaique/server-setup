@@ -91,6 +91,17 @@
       changed_when: false
       tags: [test]
 
+    - name: Preparar lista de sites configurados
+      set_fact:
+        sites_list: "{{ filtered_sites | map(attribute='domain') | list }}"
+      tags: [sites]
+
+    - name: Preparar resultados dos testes
+      set_fact:
+        test_results: "{{ site_tests.results | map('dict2items') | list }}"
+      when: site_tests is defined
+      tags: [sites]
+
     - name: Mostrar resultado dos testes
       debug:
         msg:
@@ -98,10 +109,8 @@
           - "✅ CONFIGURAÇÃO DE SITES CONCLUÍDA!"
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           - ""
-          - "📋 Sites configurados:"
-          - "{% for site in filtered_sites %}"
-          - "   ✓ {{ site.domain }} ({{ site.type }})"
-          - "{% endfor %}"
+          - "📋 Sites configurados: {{ filtered_sites | length }}"
+          - "{{ sites_list | join(', ') }}"
           - ""
           - "🔐 SSL:"
           - "   - Certificados obtidos e instalados"
@@ -111,17 +120,6 @@
           - "🌐 Cloudflare:"
           - "   - RemoteIP configurado"
           - "   - Logs mostram IP real dos visitantes"
-          - ""
-          - "📊 Teste de conectividade:"
-          - "{% for result in site_tests.results %}"
-          - "   {% if result.status is defined and result.status == 200 %}"
-          - "   ✅ {{ result.item.domain }}: OK (HTTP {{ result.status }})"
-          - "   {% elif result.status is defined %}"
-          - "   ⚠️  {{ result.item.domain }}: HTTP {{ result.status }}"
-          - "   {% else %}"
-          - "   ❌ {{ result.item.domain }}: Erro de conexão"
-          - "   {% endif %}"
-          - "{% endfor %}"
           - ""
           - "💡 Comandos úteis:"
           - "   - check-certs: Ver certificados SSL"
