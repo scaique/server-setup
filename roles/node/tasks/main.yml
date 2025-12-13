@@ -1,13 +1,55 @@
 ---
-- name: Adicionar NodeSource repo
-  shell: "curl -fsSL https://deb.nodesource.com/setup_{{ node_major }}.x | bash -"
+- name: Remover versões antigas do Node.js
+  apt:
+    name:
+      - nodejs
+      - npm
+    state: absent
+    purge: yes
+
+- name: Remover repositórios antigos do NodeSource
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/apt/sources.list.d/nodesource.list
+    - /usr/share/keyrings/nodesource.gpg
+
+- name: Baixar script de instalação do NodeSource
+  get_url:
+    url: "https://deb.nodesource.com/setup_{{ node_major }}.x"
+    dest: /tmp/nodesource_setup.sh
+    mode: '0755'
+
+- name: Executar script de instalação do NodeSource
+  command: bash /tmp/nodesource_setup.sh
   args:
-    executable: /bin/bash
+    creates: /etc/apt/sources.list.d/nodesource.list
+
+- name: Atualizar cache do APT
+  apt:
+    update_cache: yes
 
 - name: Instalar Node.js
   apt:
     name: nodejs
     state: present
+
+- name: Verificar instalação do Node.js
+  command: node --version
+  register: node_version
+  changed_when: false
+
+- name: Verificar instalação do npm
+  command: npm --version
+  register: npm_version
+  changed_when: false
+
+- name: Exibir versões instaladas
+  debug:
+    msg:
+      - "Node.js instalado: {{ node_version.stdout }}"
+      - "npm instalado: {{ npm_version.stdout }}"
 
 - name: Instalar PNPM global
   npm:
