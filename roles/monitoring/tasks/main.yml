@@ -20,14 +20,14 @@
       # ==================================================================
       
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      echo "🔍 VERIFICAÇÃO DE SEGURANÇA - $(date)"
+      echo "VERIFICAÇÃO DE SEGURANÇA - $(date)"
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
       # Processos suspeitos comuns de mineração
       SUSPICIOUS_PROCS="xmrig runnv alive lived miner cryptonight kdevtmpfsi systemd-service"
       
       echo ""
-      echo "📋 Verificando processos suspeitos..."
+      echo "Verificando processos suspeitos..."
       FOUND=0
       for proc in $SUSPICIOUS_PROCS; do
           if pgrep -f "$proc" > /dev/null 2>&1; then
@@ -43,7 +43,7 @@
       
       # Verificar conexões de rede suspeitas
       echo ""
-      echo "🌐 Verificando conexões de rede..."
+      echo "Verificando conexões de rede..."
       
       # Portas suspeitas (mineração usa portas altas)
       SUSPICIOUS_CONNS=$(ss -tupn | grep -E ':[3-9][0-9]{3}' | grep -v '127.0.0.1' | grep ESTAB)
@@ -57,7 +57,7 @@
       
       # Verificar arquivos em /tmp
       echo ""
-      echo "📁 Verificando /tmp..."
+      echo "Verificando /tmp..."
       SUSPICIOUS_FILES=$(find /tmp -type f -name "*.sh" -o -name "runnv" -o -name "config.json" 2>/dev/null)
       
       if [ -z "$SUSPICIOUS_FILES" ]; then
@@ -69,12 +69,12 @@
       
       # Verificar carga do sistema
       echo ""
-      echo "💻 Carga do sistema:"
+      echo "Carga do sistema:"
       uptime
       
       # Top 10 processos por CPU
       echo ""
-      echo "📊 Top 10 processos por uso de CPU:"
+      echo "Top 10 processos por uso de CPU:"
       ps aux --sort=-%cpu | head -11
       
       echo ""
@@ -95,39 +95,39 @@
       # ==================================================================
       
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      echo "📊 STATUS DO SERVIDOR - $(date)"
+      echo "STATUS DO SERVIDOR - $(date)"
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
       echo ""
-      echo "🖥️  Sistema:"
+      echo "Sistema:"
       uname -a
       
       echo ""
-      echo "⏱️  Uptime:"
+      echo "Uptime:"
       uptime
       
       echo ""
-      echo "💾 Memória:"
+      echo "Memória:"
       free -h
       
       echo ""
-      echo "💿 Disco:"
+      echo "Disco:"
       df -h /
       
       echo ""
-      echo "🌐 Apache Status:"
+      echo "Apache Status:"
       systemctl status apache2 --no-pager | head -5
       
       echo ""
-      echo "📱 PM2 Apps:"
+      echo "PM2 Apps:"
       pm2 list
       
       echo ""
-      echo "🔥 Firewall (UFW):"
+      echo "Firewall (UFW):"
       ufw status | head -10
       
       echo ""
-      echo "🔒 Fail2ban:"
+      echo "Fail2ban:"
       fail2ban-client status
       
       echo ""
@@ -148,7 +148,7 @@
       # ==================================================================
       
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      echo "🔐 VERIFICAÇÃO DE CERTIFICADOS SSL - $(date)"
+      echo "VERIFICAÇÃO DE CERTIFICADOS SSL - $(date)"
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
       certbot certificates
@@ -169,4 +169,4 @@
       - "   - server-status: Mostra status geral do servidor"
       - "   - check-certs: Verifica certificados SSL"
       - ""
-      - "💡 Use: checkmalware, server-status, ou check-certs"
+      - "Use: checkmalware, server-status, ou check-certs"
