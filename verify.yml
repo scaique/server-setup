@@ -1,5 +1,4 @@
 ---
-
 - name: Verificação completa do servidor
   hosts: local
   become: true
@@ -8,375 +7,327 @@
     - vars/vars.yml
 
   tasks:
-    - name: Exibir banner inicial
+    - name: Banner inicial
       debug:
         msg:
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           - "🔍 VERIFICAÇÃO COMPLETA DO SERVIDOR"
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    # VERIFICAR PACOTES INSTALADOS
+    # PACOTES
 
-    - name: Verificar se Apache está instalado
-      command: apache2 -v
-      register: apache_check
+    - name: Verificar pacotes instalados
+      command: "{{ item.cmd }}"
+      loop:
+        - { cmd: "apache2 -v", name: "apache" }
+        - { cmd: "node --version", name: "node" }
+        - { cmd: "npm --version", name: "npm" }
+        - { cmd: "pnpm --version", name: "pnpm" }
+        - { cmd: "pm2 --version", name: "pm2" }
+        - { cmd: "git --version", name: "git" }
+        - { cmd: "certbot --version", name: "certbot" }
+        - { cmd: "ufw --version", name: "ufw" }
+        - { cmd: "fail2ban-client --version", name: "fail2ban" }
+        - { cmd: "rkhunter --version", name: "rkhunter" }
+        - { cmd: "chkrootkit -V", name: "chkrootkit" }
+      register: packages
       failed_when: false
       changed_when: false
 
-    - name: Verificar se Node.js está instalado
-      command: node --version
-      register: node_check
-      failed_when: false
-      changed_when: false
+    # SERVIÇOS
 
-    - name: Verificar se NPM está instalado
-      command: npm --version
-      register: npm_check
-      failed_when: false
-      changed_when: false
-
-    - name: Verificar se PNPM está instalado
-      command: pnpm --version
-      register: pnpm_check
-      failed_when: false
-      changed_when: false
-
-    - name: Verificar se PM2 está instalado
-      command: pm2 --version
-      register: pm2_check
-      failed_when: false
-      changed_when: false
-
-    - name: Verificar se Git está instalado
-      command: git --version
-      register: git_check
-      failed_when: false
-      changed_when: false
-
-    - name: Verificar se Certbot está instalado
-      command: certbot --version
-      register: certbot_check
-      failed_when: false
-      changed_when: false
-
-    - name: Verificar se UFW está instalado
-      command: ufw --version
-      register: ufw_check
-      failed_when: false
-      changed_when: false
-
-    - name: Verificar se Fail2ban está instalado
-      command: fail2ban-client --version
-      register: fail2ban_check
-      failed_when: false
-      changed_when: false
-
-    - name: Verificar se rkhunter está instalado
-      command: rkhunter --version
-      register: rkhunter_check
-      failed_when: false
-      changed_when: false
-
-    - name: Verificar se chkrootkit está instalado
-      command: chkrootkit -V
-      register: chkrootkit_check
-      failed_when: false
-      changed_when: false
-
-    # VERIFICAR SERVIÇOS
-
-    - name: Verificar status do Apache
+    - name: Verificar Apache
       systemd:
         name: apache2
       register: apache_service
 
-    - name: Verificar status do Fail2ban
+    - name: Verificar Fail2ban
       systemd:
         name: fail2ban
       register: fail2ban_service
 
-    - name: Verificar status do UFW
+    - name: Verificar UFW
       command: ufw status
       register: ufw_status
       changed_when: false
 
-    # VERIFICAR MÓDULOS DO APACHE
+    # MÓDULOS APACHE
 
-    - name: Listar módulos do Apache habilitados
+    - name: Listar módulos Apache
       command: apache2ctl -M
-      register: apache_modules_list
+      register: apache_modules
       changed_when: false
 
-    - name: Verificar módulos essenciais do Apache
+    - name: Verificar módulos críticos
       set_fact:
         missing_modules: []
 
-    - name: Checar módulo proxy
+    - name: Checar cada módulo
       set_fact:
-        missing_modules: "{{ missing_modules + ['proxy'] }}"
-      when: "'proxy_module' not in apache_modules_list.stdout"
+        missing_modules: "{{ missing_modules + [item] }}"
+      when: "item + '_module' not in apache_modules.stdout"
+      loop:
+        - proxy
+        - proxy_http
+        - proxy_wstunnel
+        - rewrite
+        - headers
+        - ssl
+        - remoteip
 
-    - name: Checar módulo proxy_http
-      set_fact:
-        missing_modules: "{{ missing_modules + ['proxy_http'] }}"
-      when: "'proxy_http_module' not in apache_modules_list.stdout"
+    # CONFIGURAÇÕES APACHE
 
-    - name: Checar módulo rewrite
-      set_fact:
-        missing_modules: "{{ missing_modules + ['rewrite'] }}"
-      when: "'rewrite_module' not in apache_modules_list.stdout"
-
-    - name: Checar módulo headers
-      set_fact:
-        missing_modules: "{{ missing_modules + ['headers'] }}"
-      when: "'headers_module' not in apache_modules_list.stdout"
-
-    - name: Checar módulo ssl
-      set_fact:
-        missing_modules: "{{ missing_modules + ['ssl'] }}"
-      when: "'ssl_module' not in apache_modules_list.stdout"
-
-    - name: Checar módulo remoteip (Cloudflare)
-      set_fact:
-        missing_modules: "{{ missing_modules + ['remoteip'] }}"
-      when: "'remoteip_module' not in apache_modules_list.stdout"
-
-    # VERIFICAR CONFIGURAÇÕES DO APACHE
-
-    - name: Verificar se configuração do Cloudflare existe
+    - name: Verificar arquivos de configuração Apache
       stat:
-        path: /etc/apache2/conf-available/cloudflare-remoteip.conf
-      register: cloudflare_conf_available
+        path: "{{ item }}"
+      loop:
+        - /etc/apache2/conf-available/cloudflare-remoteip.conf
+        - /etc/apache2/conf-enabled/cloudflare-remoteip.conf
+        - /etc/apache2/mods-available/mpm_event.conf
+        - /etc/apache2/conf-enabled/security.conf
+      register: apache_configs
 
-    - name: Verificar se configuração do Cloudflare está habilitada
-      stat:
-        path: /etc/apache2/conf-enabled/cloudflare-remoteip.conf
-      register: cloudflare_conf_enabled
-
-    - name: Testar configuração do Apache
+    - name: Testar configuração Apache
       command: apache2ctl configtest
-      register: apache_configtest
+      register: apache_test
       failed_when: false
       changed_when: false
 
-    # VERIFICAR SITES CONFIGURADOS
+    # SITES
 
-    - name: Listar sites disponíveis
-      find:
-        paths: /etc/apache2/sites-available
-        patterns: "*.conf"
-      register: sites_available
-
-    - name: Listar sites habilitados
-      find:
-        paths: /etc/apache2/sites-enabled
-        patterns: "*.conf"
-      register: sites_enabled
-
-    - name: Verificar cada site configurado
+    - name: Verificar vhosts habilitados
       stat:
         path: "/etc/apache2/sites-enabled/{{ item.domain }}.conf"
       loop: "{{ sites }}"
-      register: sites_check
+      register: vhosts_enabled
 
-    # VERIFICAR CERTIFICADOS SSL
+    - name: Verificar vhosts disponíveis
+      stat:
+        path: "/etc/apache2/sites-available/{{ item.domain }}.conf"
+      loop: "{{ sites }}"
+      register: vhosts_available
+
+    - name: Verificar diretórios dos sites
+      stat:
+        path: "{{ item.root }}"
+      loop: "{{ sites }}"
+      register: site_dirs
+
+    # SSL
 
     - name: Verificar certificados SSL
       stat:
         path: "/etc/letsencrypt/live/{{ item.domain }}/fullchain.pem"
       loop: "{{ sites }}"
-      register: ssl_check
+      register: ssl_certs
 
-    - name: Verificar cron de renovação SSL
+    - name: Verificar cron renovação SSL
       command: crontab -l
-      register: cron_check
+      register: cron_ssl
       failed_when: false
       changed_when: false
 
-    # VERIFICAR SCRIPTS DE MONITORAMENTO
+    # SCRIPTS MONITORAMENTO
 
-    - name: Verificar script checkmalware
+    - name: Verificar scripts
       stat:
-        path: /usr/local/bin/checkmalware
-      register: checkmalware_script
+        path: "{{ item }}"
+      loop:
+        - /usr/local/bin/checkmalware
+        - /usr/local/bin/server-status
+        - /usr/local/bin/check-certs
+      register: scripts
 
-    - name: Verificar script server-status
+    # SEGURANÇA
+
+    - name: Verificar arquivos de segurança
       stat:
-        path: /usr/local/bin/server-status
-      register: serverstatus_script
+        path: "{{ item }}"
+      loop:
+        - /etc/fail2ban/jail.local
+        - /etc/sysctl.d/99-hardening.conf
+      register: security_files
 
-    - name: Verificar script check-certs
-      stat:
-        path: /usr/local/bin/check-certs
-      register: checkcerts_script
-
-    # VERIFICAR FIREWALL
-
-    - name: Verificar regras do UFW
-      command: ufw status numbered
-      register: ufw_rules
-      changed_when: false
-
-    # VERIFICAR FAIL2BAN
-
-    - name: Verificar jails do Fail2ban
+    - name: Verificar jails Fail2ban
       command: fail2ban-client status
       register: fail2ban_jails
       changed_when: false
 
-    # GERAR RELATÓRIO FINAL
+    - name: Verificar regras UFW
+      command: ufw status numbered
+      register: ufw_rules
+      changed_when: false
 
-    - name: Preparar resumo de pacotes
-      set_fact:
-        packages_status:
-          apache: "{{ '✅ Instalado' if apache_check.rc == 0 else '❌ NÃO instalado' }}"
-          node: "{{ '✅ ' + node_check.stdout.strip() if node_check.rc == 0 else '❌ NÃO instalado' }}"
-          npm: "{{ '✅ ' + npm_check.stdout.strip() if npm_check.rc == 0 else '❌ NÃO instalado' }}"
-          pnpm: "{{ '✅ ' + pnpm_check.stdout.strip() if pnpm_check.rc == 0 else '❌ NÃO instalado' }}"
-          pm2: "{{ '✅ ' + pm2_check.stdout.strip() if pm2_check.rc == 0 else '❌ NÃO instalado' }}"
-          git: "{{ '✅ Instalado' if git_check.rc == 0 else '❌ NÃO instalado' }}"
-          certbot: "{{ '✅ Instalado' if certbot_check.rc == 0 else '❌ NÃO instalado' }}"
-          ufw: "{{ '✅ Instalado' if ufw_check.rc == 0 else '❌ NÃO instalado' }}"
-          fail2ban: "{{ '✅ Instalado' if fail2ban_check.rc == 0 else '❌ NÃO instalado' }}"
-          rkhunter: "{{ '✅ Instalado' if rkhunter_check.rc == 0 else '❌ NÃO instalado' }}"
-          chkrootkit: "{{ '✅ Instalado' if chkrootkit_check.rc == 0 else '❌ NÃO instalado' }}"
+    # FIREWALL
 
-    - name: Preparar resumo de serviços
+    - name: Verificar portas abertas UFW
+      shell: ufw status | grep -E "^(22|80|443)"
+      register: ufw_ports
+      failed_when: false
+      changed_when: false
+
+    # PREPARAR RELATÓRIO
+
+    - name: Resumo pacotes
       set_fact:
-        services_status:
+        pkg_status:
+          apache: "{{ '✅' if packages.results[0].rc == 0 else '❌' }}"
+          node: "{{ '✅ ' + packages.results[1].stdout.strip() if packages.results[1].rc == 0 else '❌' }}"
+          npm: "{{ '✅ ' + packages.results[2].stdout.strip() if packages.results[2].rc == 0 else '❌' }}"
+          pnpm: "{{ '✅ ' + packages.results[3].stdout.strip() if packages.results[3].rc == 0 else '❌' }}"
+          pm2: "{{ '✅ ' + packages.results[4].stdout.strip() if packages.results[4].rc == 0 else '❌' }}"
+          git: "{{ '✅' if packages.results[5].rc == 0 else '❌' }}"
+          certbot: "{{ '✅' if packages.results[6].rc == 0 else '❌' }}"
+          ufw: "{{ '✅' if packages.results[7].rc == 0 else '❌' }}"
+          fail2ban: "{{ '✅' if packages.results[8].rc == 0 else '❌' }}"
+          rkhunter: "{{ '✅' if packages.results[9].rc == 0 else '❌' }}"
+          chkrootkit: "{{ '✅' if packages.results[10].rc == 0 else '❌' }}"
+
+    - name: Resumo serviços
+      set_fact:
+        svc_status:
           apache: "{{ '✅ Rodando' if apache_service.status.ActiveState == 'active' else '❌ Parado' }}"
           fail2ban: "{{ '✅ Rodando' if fail2ban_service.status.ActiveState == 'active' else '❌ Parado' }}"
           ufw: "{{ '✅ Ativo' if 'Status: active' in ufw_status.stdout else '❌ Inativo' }}"
 
-    - name: Preparar resumo de módulos Apache
+    - name: Resumo Apache
       set_fact:
-        modules_status: "{{ '✅ Todos habilitados' if missing_modules | length == 0 else '❌ Faltando: ' + (missing_modules | join(', ')) }}"
+        apache_summary:
+          config_valid: "{{ apache_test.rc == 0 }}"
+          modules_ok: "{{ missing_modules | length == 0 }}"
+          cloudflare_exists: "{{ apache_configs.results[0].stat.exists }}"
+          cloudflare_enabled: "{{ apache_configs.results[1].stat.exists }}"
+          mpm_event: "{{ apache_configs.results[2].stat.exists }}"
+          security_conf: "{{ apache_configs.results[3].stat.exists }}"
 
-    - name: Preparar resumo Cloudflare
-      set_fact:
-        cloudflare_status:
-          config_exists: "{{ '✅ Existe' if cloudflare_conf_available.stat.exists else '❌ NÃO existe' }}"
-          config_enabled: "{{ '✅ Habilitado' if cloudflare_conf_enabled.stat.exists else '❌ NÃO habilitado' }}"
-
-    - name: Preparar resumo de sites
+    - name: Resumo sites
       set_fact:
         sites_summary:
           total: "{{ sites | length }}"
-          configured: "{{ sites_check.results | selectattr('stat.exists', 'equalto', true) | list | length }}"
-          with_ssl: "{{ ssl_check.results | selectattr('stat.exists', 'equalto', true) | list | length }}"
+          vhosts_available: "{{ vhosts_available.results | selectattr('stat.exists') | list | length }}"
+          vhosts_enabled: "{{ vhosts_enabled.results | selectattr('stat.exists') | list | length }}"
+          dirs_created: "{{ site_dirs.results | selectattr('stat.exists') | list | length }}"
+          with_ssl: "{{ ssl_certs.results | selectattr('stat.exists') | list | length }}"
 
-    - name: Preparar resumo de scripts
+    - name: Resumo segurança
       set_fact:
-        scripts_status:
-          checkmalware: "{{ '✅ Instalado' if checkmalware_script.stat.exists else '❌ NÃO instalado' }}"
-          server_status: "{{ '✅ Instalado' if serverstatus_script.stat.exists else '❌ NÃO instalado' }}"
-          check_certs: "{{ '✅ Instalado' if checkcerts_script.stat.exists else '❌ NÃO instalado' }}"
+        security_summary:
+          fail2ban_jail: "{{ security_files.results[0].stat.exists }}"
+          sysctl_hardening: "{{ security_files.results[1].stat.exists }}"
+          scripts_ok: "{{ scripts.results | selectattr('stat.exists') | list | length }}"
 
-    - name: Exibir relatório completo
+    # RELATÓRIO FINAL
+
+    - name: Exibir relatório
       debug:
         msg:
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           - "📊 RELATÓRIO DE VERIFICAÇÃO"
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           - ""
-          - "📦 PACOTES INSTALADOS:"
-          - "   Apache: {{ packages_status.apache }}"
-          - "   Node.js: {{ packages_status.node }}"
-          - "   NPM: {{ packages_status.npm }}"
-          - "   PNPM: {{ packages_status.pnpm }}"
-          - "   PM2: {{ packages_status.pm2 }}"
-          - "   Git: {{ packages_status.git }}"
-          - "   Certbot: {{ packages_status.certbot }}"
-          - "   UFW: {{ packages_status.ufw }}"
-          - "   Fail2ban: {{ packages_status.fail2ban }}"
-          - "   rkhunter: {{ packages_status.rkhunter }}"
-          - "   chkrootkit: {{ packages_status.chkrootkit }}"
+          - "📦 PACOTES:"
+          - "   Apache: {{ pkg_status.apache }}"
+          - "   Node.js: {{ pkg_status.node }}"
+          - "   NPM: {{ pkg_status.npm }}"
+          - "   PNPM: {{ pkg_status.pnpm }}"
+          - "   PM2: {{ pkg_status.pm2 }}"
+          - "   Git: {{ pkg_status.git }}"
+          - "   Certbot: {{ pkg_status.certbot }}"
+          - "   UFW: {{ pkg_status.ufw }}"
+          - "   Fail2ban: {{ pkg_status.fail2ban }}"
+          - "   rkhunter: {{ pkg_status.rkhunter }}"
+          - "   chkrootkit: {{ pkg_status.chkrootkit }}"
           - ""
           - "🔧 SERVIÇOS:"
-          - "   Apache: {{ services_status.apache }}"
-          - "   Fail2ban: {{ services_status.fail2ban }}"
-          - "   UFW: {{ services_status.ufw }}"
+          - "   Apache: {{ svc_status.apache }}"
+          - "   Fail2ban: {{ svc_status.fail2ban }}"
+          - "   UFW: {{ svc_status.ufw }}"
           - ""
           - "🌐 APACHE:"
-          - "   Configuração: {{ '✅ Válida' if apache_configtest.rc == 0 else '❌ Inválida' }}"
-          - "   Módulos: {{ modules_status }}"
+          - "   Configuração: {{ '✅ Válida' if apache_summary.config_valid else '❌ Inválida' }}"
+          - "   Módulos: {{ '✅ OK' if apache_summary.modules_ok else '❌ Faltando: ' + (missing_modules | join(', ')) }}"
+          - "   MPM Event: {{ '✅' if apache_summary.mpm_event else '❌' }}"
+          - "   Security.conf: {{ '✅' if apache_summary.security_conf else '❌' }}"
           - ""
           - "☁️  CLOUDFLARE:"
-          - "   Configuração disponível: {{ cloudflare_status.config_exists }}"
-          - "   Configuração habilitada: {{ cloudflare_status.config_enabled }}"
+          - "   Config existe: {{ '✅' if apache_summary.cloudflare_exists else '❌' }}"
+          - "   Config habilitada: {{ '✅' if apache_summary.cloudflare_enabled else '❌' }}"
           - ""
           - "🌍 SITES:"
-          - "   Total de sites: {{ sites_summary.total }}"
-          - "   Sites configurados: {{ sites_summary.configured }}/{{ sites_summary.total }}"
-          - "   Sites com SSL: {{ sites_summary.with_ssl }}/{{ sites_summary.total }}"
-          - "   Renovação SSL: {{ '✅ Configurada' if 'certbot renew' in cron_check.stdout else '❌ NÃO configurada' }}"
+          - "   Total: {{ sites_summary.total }}"
+          - "   VHosts disponíveis: {{ sites_summary.vhosts_available }}/{{ sites_summary.total }}"
+          - "   VHosts habilitados: {{ sites_summary.vhosts_enabled }}/{{ sites_summary.total }}"
+          - "   Diretórios criados: {{ sites_summary.dirs_created }}/{{ sites_summary.total }}"
+          - "   Com SSL: {{ sites_summary.with_ssl }}/{{ sites_summary.total }}"
+          - "   Renovação SSL: {{ '✅' if 'certbot renew' in cron_ssl.stdout else '❌' }}"
           - ""
-          - "📊 SCRIPTS DE MONITORAMENTO:"
-          - "   checkmalware: {{ scripts_status.checkmalware }}"
-          - "   server-status: {{ scripts_status.server_status }}"
-          - "   check-certs: {{ scripts_status.check_certs }}"
+          - "🔒 SEGURANÇA:"
+          - "   Fail2ban jail.local: {{ '✅' if security_summary.fail2ban_jail else '❌' }}"
+          - "   Sysctl hardening: {{ '✅' if security_summary.sysctl_hardening else '❌' }}"
+          - "   Scripts monitoramento: {{ security_summary.scripts_ok }}/3"
+          - "   Jails ativos: {{ fail2ban_jails.stdout }}"
           - ""
           - "🔥 FIREWALL:"
-          - "   Regras configuradas: {{ ufw_rules.stdout_lines | length - 5 }}"
-          - ""
-          - "🔒 FAIL2BAN:"
-          - "   {{ fail2ban_jails.stdout }}"
+          - "   Portas 22,80,443: {{ '✅' if ufw_ports.rc == 0 else '❌' }}"
+          - "   Total regras: {{ ufw_rules.stdout_lines | length - 5 }}"
           - ""
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    - name: Verificar se há problemas críticos
-      set_fact:
-        critical_issues: []
+    # PROBLEMAS CRÍTICOS
 
-    - name: Adicionar problema - Apache não instalado
+    - name: Verificar problemas
       set_fact:
-        critical_issues: "{{ critical_issues + ['Apache não está instalado'] }}"
-      when: apache_check.rc != 0
+        issues: []
 
-    - name: Adicionar problema - Apache não rodando
+    - name: Check Apache
       set_fact:
-        critical_issues: "{{ critical_issues + ['Apache não está rodando'] }}"
+        issues: "{{ issues + ['Apache não rodando'] }}"
       when: apache_service.status.ActiveState != 'active'
 
-    - name: Adicionar problema - Cloudflare não configurado
+    - name: Check Cloudflare
       set_fact:
-        critical_issues: "{{ critical_issues + ['Cloudflare RemoteIP não está habilitado'] }}"
-      when: not cloudflare_conf_enabled.stat.exists
+        issues: "{{ issues + ['Cloudflare não habilitado'] }}"
+      when: not apache_summary.cloudflare_enabled
 
-    - name: Adicionar problema - Sites sem SSL
+    - name: Check Sites
       set_fact:
-        critical_issues: "{{ critical_issues + ['Alguns sites não têm certificado SSL'] }}"
+        issues: "{{ issues + [sites_summary.vhosts_enabled|string + '/' + sites_summary.total|string + ' sites habilitados'] }}"
+      when: sites_summary.vhosts_enabled | int < sites_summary.total | int
+
+    - name: Check SSL
+      set_fact:
+        issues: "{{ issues + ['SSL faltando em ' + ((sites_summary.total|int - sites_summary.with_ssl|int)|string) + ' site(s)'] }}"
       when: sites_summary.with_ssl | int < sites_summary.total | int
 
-    - name: Adicionar problema - Fail2ban não rodando
+    - name: Check Fail2ban
       set_fact:
-        critical_issues: "{{ critical_issues + ['Fail2ban não está rodando'] }}"
+        issues: "{{ issues + ['Fail2ban não rodando'] }}"
       when: fail2ban_service.status.ActiveState != 'active'
 
-    - name: Adicionar problema - UFW não ativo
+    - name: Check UFW
       set_fact:
-        critical_issues: "{{ critical_issues + ['UFW não está ativo'] }}"
+        issues: "{{ issues + ['UFW não ativo'] }}"
       when: "'Status: active' not in ufw_status.stdout"
 
-    - name: Exibir problemas críticos se houver
+    - name: Mostrar problemas
       debug:
         msg:
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          - "⚠️  PROBLEMAS CRÍTICOS ENCONTRADOS:"
+          - "⚠️  PROBLEMAS ENCONTRADOS:"
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          - "{{ critical_issues | join('\n') }}"
+          - "{{ issues | join('\n') }}"
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      when: critical_issues | length > 0
+      when: issues | length > 0
 
-    - name: Exibir mensagem de sucesso
+    - name: Sucesso
       debug:
         msg:
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           - "✅ TUDO CONFIGURADO CORRETAMENTE!"
           - "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      when: critical_issues | length == 0
+      when: issues | length == 0
 
-    - name: Falhar se houver problemas críticos
+    - name: Falhar se houver problemas
       fail:
-        msg: "Existem {{ critical_issues | length }} problema(s) crítico(s). Verifique o relatório acima."
-      when: critical_issues | length > 0
+        msg: "{{ issues | length }} problema(s) encontrado(s)"
+      when: issues | length > 0
