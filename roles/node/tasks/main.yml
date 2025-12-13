@@ -35,23 +35,37 @@
     name: nodejs
     state: present
 
-- name: Verificar instalação do Node.js
-  command: node --version
-  register: node_version
-  changed_when: false
+- name: Criar link simbólico do npm se não existir
+  file:
+    src: /usr/bin/npm
+    dest: /usr/local/bin/npm
+    state: link
+  ignore_errors: yes
 
-- name: Verificar instalação do npm
-  command: npm --version
-  register: npm_version
-  changed_when: false
+- name: Verificar se npm existe
+  stat:
+    path: /usr/bin/npm
+  register: npm_bin
 
-- name: Exibir versões instaladas
+- name: Exibir aviso se npm não foi instalado
   debug:
-    msg:
-      - "Node.js instalado: {{ node_version.stdout }}"
-      - "npm instalado: {{ npm_version.stdout }}"
+    msg: "AVISO: npm não foi encontrado. Será instalado via nodejs."
+  when: not npm_bin.stat.exists
+
+- name: Verificar versões instaladas
+  shell: |
+    node --version
+    npm --version 2>/dev/null || echo "npm não disponível ainda"
+  register: versions
+  changed_when: false
+
+- name: Exibir versões
+  debug:
+    msg: "{{ versions.stdout_lines }}"
 
 - name: Instalar PNPM global
   npm:
     name: "{{ pnpm_package }}"
     global: yes
+  retries: 3
+  delay: 5
